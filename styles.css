@@ -1,0 +1,226 @@
+:root {
+  color-scheme: light;
+  --overlay-width: 100vw;
+  --overlay-height: 100vh;
+  --ground-offset: 56px;
+  --purple-core: #8b5cf6;
+  --purple-shadow: #4c1d95;
+  --grey-core: #b7becf;
+  --grey-shadow: #5f6778;
+  --sparkle: #fff5c2;
+  --panel-bg: rgba(12, 14, 24, 0.76);
+  --panel-border: rgba(255, 255, 255, 0.16);
+  --panel-text: #f5f7ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  position: relative;
+}
+
+.overlay-shell {
+  position: relative;
+  width: var(--overlay-width);
+  height: var(--overlay-height);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.overlay-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.12), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 34%);
+  pointer-events: none;
+}
+
+.bits-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bit {
+  position: absolute;
+  top: -80px;
+  left: 0;
+  width: var(--bit-size, 42px);
+  height: var(--bit-size, 42px);
+  transform: translate3d(var(--start-x, 0px), 0, 0) rotate(0deg);
+  will-change: transform, opacity;
+}
+
+.bit::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--bit-image);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.24));
+}
+
+.bit::after {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border-radius: 18%;
+  background: var(--bit-fallback);
+  clip-path: polygon(50% 0%, 100% 30%, 84% 100%, 16% 100%, 0% 30%);
+  opacity: var(--fallback-opacity, 0);
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.18),
+    0 10px 18px rgba(0, 0, 0, 0.18);
+}
+
+.bit.is-sparkling::before,
+.bit.is-sparkling::after {
+  animation: bit-fade 220ms ease forwards;
+}
+
+.sparkle-burst {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+
+.sparkle-burst span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 18px;
+  margin: -9px 0 0 -2px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), var(--sparkle), rgba(255, 255, 255, 0));
+  animation: sparkle-ray 420ms ease-out forwards;
+  transform: rotate(calc(var(--ray-index) * 45deg)) translateY(calc(var(--ray-distance) * -1px));
+}
+
+.debug-panel {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 18px;
+  border: 1px solid var(--panel-border);
+  border-radius: 18px;
+  background: var(--panel-bg);
+  backdrop-filter: blur(18px);
+  color: var(--panel-text);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.28);
+  z-index: 2;
+}
+
+.debug-panel[hidden] {
+  display: none;
+}
+
+.debug-panel h1 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+
+.debug-panel p {
+  margin: 0 0 14px;
+  line-height: 1.4;
+}
+
+.debug-actions,
+.custom-trigger {
+  display: grid;
+  gap: 10px;
+}
+
+.debug-actions {
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 12px;
+}
+
+.debug-panel button,
+.debug-panel input {
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.debug-panel button {
+  background: linear-gradient(135deg, #f5f7ff, #dfe6ff);
+  color: #181b2a;
+  cursor: pointer;
+}
+
+.custom-trigger {
+  grid-template-columns: 1fr auto;
+  align-items: end;
+}
+
+.custom-trigger label {
+  grid-column: 1 / -1;
+  font-size: 0.92rem;
+}
+
+.debug-panel input {
+  background: rgba(255, 255, 255, 0.95);
+  color: #10131e;
+}
+
+.debug-hint code {
+  padding: 1px 4px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+@keyframes sparkle-ray {
+  0% {
+    opacity: 0;
+    transform: rotate(calc(var(--ray-index) * 45deg)) translateY(0) scaleY(0.4);
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: rotate(calc(var(--ray-index) * 45deg)) translateY(calc(var(--ray-distance) * -1px)) scaleY(1);
+  }
+}
+
+@keyframes bit-fade {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .debug-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .custom-trigger {
+    grid-template-columns: 1fr;
+  }
+}

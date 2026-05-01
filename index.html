@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twitch Bits Drop Overlay</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="overlay-shell">
+    <div id="bits-layer" class="bits-layer" aria-hidden="true"></div>
+
+    <section class="debug-panel" aria-label="Debug controls">
+      <h1>Bits Drop Debug</h1>
+      <p>Trigger local test events before wiring Streamer.bot.</p>
+      <div class="debug-actions">
+        <button type="button" data-bits="1">Spawn 1 Bit</button>
+        <button type="button" data-bits="24">Spawn 24 Bits</button>
+        <button type="button" data-bits="100">Spawn 100 Bits</button>
+      </div>
+      <form id="custom-trigger" class="custom-trigger">
+        <label for="bits-input">Custom bits</label>
+        <input id="bits-input" name="bits" type="number" min="1" step="1" value="24">
+        <button type="submit">Spawn</button>
+      </form>
+      <p class="debug-hint">In OBS, append <code>?debug=0</code> to hide this panel.</p>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
