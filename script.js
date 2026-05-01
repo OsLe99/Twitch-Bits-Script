@@ -1,19 +1,77 @@
-const BIT_ASSETS = {
-  purple: {
-    bits: 10,
-    file: "Bits/10.gif",
-    size: 52,
-    fallback: "linear-gradient(180deg, #be9cff 0%, #8b5cf6 42%, #4c1d95 100%)"
-  },
-  grey: {
-    bits: 1,
-    file: "Bits/1.gif",
-    size: 40,
-    fallback: "linear-gradient(180deg, #edf0f7 0%, #b7becf 45%, #5f6778 100%)"
-  }
-};
+const BIT_FILES = [
+  "Bits/1.gif",
+  "Bits/10.gif",
+  "Bits/1k.gif",
+  "Bits/5k.gif",
+  "Bits/10000.gif",
+  "Bits/100000.gif"
+];
 
-const BIT_ORDER = [BIT_ASSETS.purple, BIT_ASSETS.grey];
+function parseBitValueFromFilename(filePath) {
+  const filename = filePath.split("/").pop() || "";
+  const stem = filename.replace(/\.gif$/i, "").trim().toLowerCase();
+  const normalized = stem.replace(/[,_\s]/g, "");
+
+  if (!normalized) {
+    return null;
+  }
+
+  if (normalized.endsWith("k")) {
+    const value = Number(normalized.slice(0, -1));
+    return Number.isFinite(value) ? Math.floor(value * 1000) : null;
+  }
+
+  if (normalized.endsWith("m")) {
+    const value = Number(normalized.slice(0, -1));
+    return Number.isFinite(value) ? Math.floor(value * 1000000) : null;
+  }
+
+  const value = Number(normalized);
+  return Number.isFinite(value) ? Math.floor(value) : null;
+}
+
+function deriveBitSize(bits) {
+  const scaled = 38 + Math.log10(bits + 1) * 5.4;
+  return Math.max(40, Math.min(64, Math.round(scaled)));
+}
+
+function buildBitAssets() {
+  const assets = BIT_FILES
+    .map((file) => {
+      const bits = parseBitValueFromFilename(file);
+
+      if (!bits || bits < 1) {
+        return null;
+      }
+
+      return {
+        bits,
+        file,
+        size: deriveBitSize(bits),
+        fallback: bits >= 10
+          ? "linear-gradient(180deg, #be9cff 0%, #8b5cf6 42%, #4c1d95 100%)"
+          : "linear-gradient(180deg, #edf0f7 0%, #b7becf 45%, #5f6778 100%)"
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.bits - a.bits);
+
+  const uniqueByBits = [];
+  const seen = new Set();
+
+  for (const asset of assets) {
+    if (seen.has(asset.bits)) {
+      continue;
+    }
+
+    seen.add(asset.bits);
+    uniqueByBits.push(asset);
+  }
+
+  return uniqueByBits;
+}
+
+const BIT_ORDER = buildBitAssets();
 const layer = document.getElementById("bits-layer");
 const debugPanel = document.querySelector(".debug-panel");
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -54,7 +112,7 @@ function computeGroundY(size) {
 function createSparkle(x, y) {
   const burst = document.createElement("div");
   burst.className = "sparkle-burst";
-  burst.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  burst.style.transform = `translate3d(${x - 8}px, ${y - 8}px, 0)`;
 
   for (let index = 0; index < 8; index += 1) {
     const ray = document.createElement("span");
@@ -68,49 +126,127 @@ function createSparkle(x, y) {
   window.setTimeout(() => burst.remove(), 520);
 }
 
-function animateBit(bitElement, { startX, groundY, size, tilt, bounceX, bounceHeight, fallDuration }) {
-  const rotationAmount = randomBetween(-180, 180);
+function createSparkleForBit(bitElement) {
+  const layerRect = layer.getBoundingClientRect();
+  const bitRect = bitElement.getBoundingClientRect();
+  const sparkleX = bitRect.left - layerRect.left + bitRect.width * 0.5;
+  const sparkleY = bitRect.top - layerRect.top + bitRect.height * 0.5;
+  createSparkle(sparkleX, sparkleY);
+}
 
+function finishBit(bitElement, x, y, rotation, size) {
+  bitElement.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rotation}deg)`;
+  bitElement.classList.add("is-sparkling");
+  createSparkleForBit(bitElement);
+  window.setTimeout(() => bitElement.remove(), 220);
+}
+
+function animateBit(bitElement, {
+  startX,
+  groundY,
+  size,
+  tilt,
+  physics
+}) {
   if (!bitElement.animate || reducedMotion.matches) {
-    bitElement.style.transform = `translate3d(${startX + bounceX}px, ${groundY}px, 0) rotate(${rotationAmount * 0.2}deg)`;
-    bitElement.classList.add("is-sparkling");
-    createSparkle(startX + size * 0.32, groundY + size * 0.2);
-    window.setTimeout(() => bitElement.remove(), 220);
+    finishBit(bitElement, startX, groundY, Number(tilt) * 0.25, size);
     return;
   }
 
-  const settleX = startX + bounceX * 0.35;
-  const bounceOutX = startX + bounceX;
+  const minX = 0;
+  const maxX = Math.max(0, window.innerWidth - size);
+  let x = startX;
+  let y = -size - 20;
+  let vx = physics.vx;
+  let vy = physics.initialVy;
+  let rotation = Number(tilt);
+  let rotationVelocity = physics.rotationVelocity;
+  let bounceCount = 0;
+  let touchedGround = false;
+  let settleStartedAt = null;
+  let finished = false;
+  let previousTimestamp = performance.now();
+  const startedAt = previousTimestamp;
 
-  const animation = bitElement.animate([
-    {
-      transform: `translate3d(${startX}px, -${size + 20}px, 0) rotate(0deg)`
-    },
-    {
-      offset: 0.76,
-      transform: `translate3d(${startX}px, ${groundY}px, 0) rotate(${tilt}deg)`,
-      easing: "cubic-bezier(0.16, 1, 0.3, 1)"
-    },
-    {
-      offset: 0.9,
-      transform: `translate3d(${bounceOutX}px, ${groundY - bounceHeight}px, 0) rotate(${rotationAmount}deg)`,
-      easing: "cubic-bezier(0.22, 1, 0.36, 1)"
-    },
-    {
-      offset: 1,
-      transform: `translate3d(${settleX}px, ${groundY}px, 0) rotate(${rotationAmount * 0.3}deg)`
+  const finalize = () => {
+    if (finished) {
+      return;
     }
-  ], {
-    duration: fallDuration + 420,
-    fill: "forwards",
-    easing: "linear"
-  });
 
-  animation.addEventListener("finish", () => {
-    bitElement.classList.add("is-sparkling");
-    createSparkle(settleX + size * 0.32, groundY + size * 0.2);
-    window.setTimeout(() => bitElement.remove(), 220);
-  }, { once: true });
+    finished = true;
+    finishBit(bitElement, x, y, rotation, size);
+  };
+
+  const step = (timestamp) => {
+    if (finished) {
+      return;
+    }
+
+    const dt = Math.min(0.033, Math.max(0.008, (timestamp - previousTimestamp) / 1000));
+    previousTimestamp = timestamp;
+
+    const airDragFactor = Math.pow(physics.airDrag, dt * 60);
+    vx *= airDragFactor;
+    rotationVelocity *= Math.pow(physics.angularAirDrag, dt * 60);
+
+    vy += physics.gravity * dt;
+    x += vx * dt;
+    y += vy * dt;
+    rotation += rotationVelocity * dt;
+
+    if (x <= minX || x >= maxX) {
+      x = Math.max(minX, Math.min(maxX, x));
+      vx *= -0.45;
+      rotationVelocity *= 0.88;
+    }
+
+    if (y >= groundY) {
+      y = groundY;
+      touchedGround = true;
+
+      if (Math.abs(vy) > physics.minBounceVelocity && bounceCount < physics.maxBounces) {
+        const bounceScale = Math.max(0.42, 1 - bounceCount * 0.16);
+        vy = -Math.abs(vy) * physics.restitution * bounceScale;
+
+        if (bounceCount === 0) {
+          const direction = Math.random() < 0.5 ? -1 : 1;
+          vx = direction * randomBetween(physics.firstBounceKickMin, physics.firstBounceKickMax);
+          bitElement.dataset.firstBounceDirection = direction < 0 ? "left" : "right";
+          bitElement.dataset.firstBounceKick = String(Math.round(Math.abs(vx)));
+        } else {
+          vx *= physics.groundFriction;
+        }
+
+        rotationVelocity *= physics.angularDamping;
+        bounceCount += 1;
+        settleStartedAt = null;
+      } else {
+        vy = 0;
+        vx *= 0.82;
+        rotationVelocity *= 0.78;
+
+        if (settleStartedAt === null) {
+          settleStartedAt = timestamp;
+        }
+
+        if (timestamp - settleStartedAt >= physics.settleDelayMs) {
+          finalize();
+          return;
+        }
+      }
+    }
+
+    bitElement.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rotation}deg)`;
+
+    if (touchedGround && timestamp - startedAt >= physics.maxLifetimeMs) {
+      finalize();
+      return;
+    }
+
+    window.requestAnimationFrame(step);
+  };
+
+  window.requestAnimationFrame(step);
 }
 
 function spawnBit(asset, delayMs) {
@@ -120,9 +256,26 @@ function spawnBit(asset, delayMs) {
   const groundY = computeGroundY(size);
   const bitElement = document.createElement("div");
   const tilt = randomBetween(-24, 24).toFixed(1);
-  const bounceX = randomBetween(-48, 48);
-  const bounceHeight = randomBetween(16, 42);
-  const fallDuration = randomBetween(900, 1450);
+  const gravity = randomBetween(1750, 5200);
+  const restitution = randomBetween(0.6, 0.86);
+  const maxBounces = Math.round(randomBetween(2, 5));
+  const physics = {
+    gravity,
+    vx: randomBetween(-190, 190),
+    initialVy: randomBetween(-90, 140),
+    restitution,
+    airDrag: randomBetween(0.975, 0.993),
+    angularAirDrag: randomBetween(0.965, 0.988),
+    groundFriction: randomBetween(0.52, 0.84),
+    firstBounceKickMin: randomBetween(90, 160),
+    firstBounceKickMax: randomBetween(180, 300),
+    angularDamping: randomBetween(0.56, 0.84),
+    rotationVelocity: randomBetween(-520, 520),
+    minBounceVelocity: randomBetween(165, 300),
+    maxBounces,
+    settleDelayMs: randomBetween(90, 230),
+    maxLifetimeMs: randomBetween(3200, 5200)
+  };
 
   bitElement.className = "bit";
   bitElement.style.setProperty("--bit-size", `${size}px`);
@@ -130,6 +283,9 @@ function spawnBit(asset, delayMs) {
   bitElement.style.setProperty("--bit-image", assetSupport.get(asset.file) ? `url("${asset.file}")` : "none");
   bitElement.style.setProperty("--bit-fallback", asset.fallback);
   bitElement.style.setProperty("--fallback-opacity", assetSupport.get(asset.file) ? "0" : "1");
+  bitElement.dataset.gravity = String(Math.round(gravity));
+  bitElement.dataset.restitution = String(restitution.toFixed(2));
+  bitElement.dataset.maxBounces = String(maxBounces);
   layer.append(bitElement);
 
   window.setTimeout(() => {
@@ -138,9 +294,7 @@ function spawnBit(asset, delayMs) {
       groundY,
       size,
       tilt,
-      bounceX,
-      bounceHeight,
-      fallDuration
+      physics
     });
   }, delayMs);
 }
@@ -158,7 +312,7 @@ function setAssetFallbackState(filesExist) {
 }
 
 function verifyAssets() {
-  const files = Object.values(BIT_ASSETS).map((asset) => asset.file);
+  const files = BIT_ORDER.map((asset) => asset.file);
 
   return Promise.all(files.map((file) => new Promise((resolve) => {
     const image = new Image();
@@ -169,7 +323,7 @@ function verifyAssets() {
 }
 
 function applyAssetSupport(results) {
-  Object.values(BIT_ASSETS).forEach((asset, index) => {
+  BIT_ORDER.forEach((asset, index) => {
     assetSupport.set(asset.file, Boolean(results[index]));
   });
 
