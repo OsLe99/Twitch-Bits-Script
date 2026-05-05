@@ -1,27 +1,86 @@
 import { verifyAssets, applyAssetSupport } from "./assets.js";
-import { spawnBits, decomposeBits } from "./spawn.js";
+import { PHYSICS_PRESETS } from "./config.js";
+import { decomposeBits, spawnBit, spawnBits } from "./spawn.js";
+import { SpawnQueue } from "./queue.js";
+import { triggerScreenshake } from "./effects.js";
+import { initSounds } from "./sounds.js";
+import { checkMilestone } from "./milestones.js";
 import { bindDebugControls } from "./debug.js";
 import { installExternalTriggers } from "./triggers.js";
 
 const layer = document.getElementById("bits-layer");
+const shell = document.querySelector(".overlay-shell");
 const debugPanel = document.querySelector(".debug-panel");
+const hudCounter = document.getElementById("bit-counter");
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const urlParams = new URLSearchParams(window.location.search);
 
-if (urlParams.get("debug") === "0") {
+const isDebugHidden = urlParams.get("debug") === "0";
+
+if (isDebugHidden) {
   debugPanel.hidden = true;
+
+  if (hudCounter) {
+    hudCounter.hidden = true;
+  }
 }
 
-const spawn = (bitAmount) => spawnBits(layer, reducedMotion, bitAmount);
+const presetName = urlParams.get("physics") ?? "default";
+let preset = PHYSICS_PRESETS[presetName] ?? PHYSICS_PRESETS.default;
 
-bindDebugControls(spawn);
+const presetSelect = document.getElementById("physics-preset");
+
+if (presetSelect && PHYSICS_PRESETS[presetName]) {
+  presetSelect.value = presetName;
+}
+const cap = Math.max(1, Number(urlParams.get("cap")) || 15);
+const shakeThreshold = 100;
+
+let sessionTotal = 0;
+
+function updateHud(amount) {
+  if (!hudCounter || isDebugHidden) return;
+  sessionTotal += amount;
+  hudCounter.textContent = `${sessionTotal.toLocaleString()} bits`;
+}
+
+const queue = new SpawnQueue({
+  cap,
+  onPiece: (asset, _meta) => spawnBit(layer, reducedMotion, asset, 0, preset)
+});
+
+function spawn(bitAmount, meta = {}) {
+  const amount = Math.max(0, Math.floor(Number(bitAmount) || 0));
+
+  if (amount <= 0) return;
+
+  checkMilestone(amount, shell, layer);
+
+  if (amount >= shakeThreshold && amount < 1000) {
+    triggerScreenshake(shell, Math.min(0.5, amount / 500));
+  }
+
+  const pieces = decomposeBits(amount);
+  queue.enqueue(pieces, meta);
+  updateHud(amount);
+}
+
+bindDebugControls(
+  spawn,
+  null,
+  (name) => { preset = PHYSICS_PRESETS[name] ?? PHYSICS_PRESETS.default; }
+);
 installExternalTriggers(spawn);
 
 verifyAssets().then((results) => {
   applyAssetSupport(results);
 });
 
+initSounds();
+
 window.__bitsOverlay = {
   decomposeBits,
-  spawnBits: spawn
+  spawnBits: (bitAmount, meta) => spawn(bitAmount, meta),
+  spawnBitsDirect: (bitAmount) => spawnBits(layer, reducedMotion, bitAmount, preset),
+  queue
 };

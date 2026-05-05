@@ -1,7 +1,8 @@
-import { BIT_ORDER } from "./config.js";
+import { BIT_ORDER, PHYSICS_PRESETS } from "./config.js";
 import { assetSupport } from "./assets.js";
 import { randomBetween, computeGroundY, animateBit } from "./physics.js";
-import { finishBit } from "./effects.js";
+import { finishBit, createTrail } from "./effects.js";
+import { triggerSpawnSound, triggerLandSound } from "./sounds.js";
 
 export function decomposeBits(bitAmount) {
   let remaining = Math.max(0, Math.floor(Number(bitAmount) || 0));
@@ -20,32 +21,32 @@ export function decomposeBits(bitAmount) {
   return pieces;
 }
 
-export function spawnBit(layer, reducedMotion, asset, delayMs) {
+export function spawnBit(layer, reducedMotion, asset, delayMs, preset = PHYSICS_PRESETS.default) {
   const size = asset.size;
   const maxX = Math.max(0, window.innerWidth - size - 8);
   const startX = randomBetween(8, maxX);
   const groundY = computeGroundY(size);
   const bitElement = document.createElement("div");
   const tilt = randomBetween(-24, 24).toFixed(1);
-  const gravity = randomBetween(1750, 5200);
-  const restitution = randomBetween(0.6, 0.86);
-  const maxBounces = Math.round(randomBetween(2, 5));
+  const gravity = randomBetween(...preset.gravity);
+  const restitution = randomBetween(...preset.restitution);
+  const maxBounces = Math.round(randomBetween(...preset.maxBounces));
   const physics = {
     gravity,
-    vx: randomBetween(-190, 190),
-    initialVy: randomBetween(-90, 140),
+    vx: randomBetween(...preset.vx),
+    initialVy: randomBetween(...preset.initialVy),
     restitution,
-    airDrag: randomBetween(0.975, 0.993),
-    angularAirDrag: randomBetween(0.965, 0.988),
-    groundFriction: randomBetween(0.52, 0.84),
-    firstBounceKickMin: randomBetween(90, 160),
-    firstBounceKickMax: randomBetween(180, 300),
-    angularDamping: randomBetween(0.56, 0.84),
-    rotationVelocity: randomBetween(-520, 520),
-    minBounceVelocity: randomBetween(165, 300),
+    airDrag: randomBetween(...preset.airDrag),
+    angularAirDrag: randomBetween(...preset.angularAirDrag),
+    groundFriction: randomBetween(...preset.groundFriction),
+    firstBounceKickMin: randomBetween(...preset.firstBounceKickMin),
+    firstBounceKickMax: randomBetween(...preset.firstBounceKickMax),
+    angularDamping: randomBetween(...preset.angularDamping),
+    rotationVelocity: randomBetween(...preset.rotationVelocity),
+    minBounceVelocity: randomBetween(...preset.minBounceVelocity),
     maxBounces,
-    settleDelayMs: randomBetween(90, 230),
-    maxLifetimeMs: randomBetween(3200, 5200)
+    settleDelayMs: randomBetween(...preset.settleDelay),
+    maxLifetimeMs: randomBetween(...preset.maxLifetime)
   };
 
   bitElement.className = "bit";
@@ -59,20 +60,30 @@ export function spawnBit(layer, reducedMotion, asset, delayMs) {
   bitElement.dataset.maxBounces = String(maxBounces);
   layer.append(bitElement);
 
+  triggerSpawnSound();
+
   window.setTimeout(() => {
+    const trailFn = reducedMotion.matches
+      ? null
+      : (tx, ty, sz) => createTrail(layer, tx, ty, sz);
+
     animateBit(
       bitElement,
       { startX, groundY, size, tilt, physics },
       reducedMotion,
-      (el, x, y, rotation) => finishBit(layer, el, x, y, rotation)
+      (el, x, y, rotation, sz) => {
+        triggerLandSound();
+        finishBit(layer, el, x, y, rotation, sz);
+      },
+      trailFn
     );
   }, delayMs);
 }
 
-export function spawnBits(layer, reducedMotion, bitAmount) {
+export function spawnBits(layer, reducedMotion, bitAmount, preset = PHYSICS_PRESETS.default) {
   const pieces = decomposeBits(bitAmount);
 
   pieces.forEach((asset, index) => {
-    spawnBit(layer, reducedMotion, asset, index * randomBetween(55, 110));
+    spawnBit(layer, reducedMotion, asset, index * randomBetween(55, 110), preset);
   });
 }

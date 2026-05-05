@@ -9,6 +9,7 @@
 <body>
   <main class="overlay-shell">
     <div id="bits-layer" class="bits-layer" aria-hidden="true"></div>
+    <div id="bit-counter" class="bit-counter" aria-live="polite">0 bits</div>
 
     <section class="debug-panel" aria-label="Debug controls">
       <h1>Bits Drop Debug</h1>
@@ -17,12 +18,22 @@
         <button type="button" data-bits="1">Spawn 1 Bit</button>
         <button type="button" data-bits="24">Spawn 24 Bits</button>
         <button type="button" data-bits="100">Spawn 100 Bits</button>
+        <button type="button" data-bits="1000">Spawn 1000 Bits</button>
       </div>
       <form id="custom-trigger" class="custom-trigger">
         <label for="bits-input">Custom bits</label>
         <input id="bits-input" name="bits" type="number" min="1" step="1" value="24">
         <button type="submit">Spawn</button>
       </form>
+      <div class="preset-control">
+        <label for="physics-preset">Physics preset</label>
+        <select id="physics-preset">
+          <option value="default">Default</option>
+          <option value="light">Light</option>
+          <option value="heavy">Heavy</option>
+          <option value="chaotic">Chaotic</option>
+        </select>
+      </div>
       <p class="debug-hint">In OBS, append <code>?debug=0</code> to hide this panel.</p>
     </section>
   </main>

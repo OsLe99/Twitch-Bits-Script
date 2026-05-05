@@ -1,6 +1,6 @@
 export function installExternalTriggers(onSpawn) {
-  window.spawnBitsDrop = (bitAmount) => {
-    onSpawn(bitAmount);
+  window.spawnBitsDrop = (bitAmount, meta = {}) => {
+    onSpawn(bitAmount, meta);
   };
 
   window.addEventListener("message", (event) => {
@@ -11,7 +11,8 @@ export function installExternalTriggers(onSpawn) {
     }
 
     if (payload.type === "spawnBits" && Number.isFinite(Number(payload.bits))) {
-      onSpawn(Number(payload.bits));
+      const { username = "", message = "" } = payload;
+      onSpawn(Number(payload.bits), { username, message });
     }
   });
 }

@@ -6,7 +6,7 @@ export function computeGroundY(size) {
   return window.innerHeight - size - 56;
 }
 
-export function animateBit(bitElement, { startX, groundY, size, tilt, physics }, reducedMotion, onFinish) {
+export function animateBit(bitElement, { startX, groundY, size, tilt, physics }, reducedMotion, onFinish, onTrail = null) {
   if (!bitElement.animate || reducedMotion.matches) {
     onFinish(bitElement, startX, groundY, Number(tilt) * 0.25, size);
     return;
@@ -15,7 +15,7 @@ export function animateBit(bitElement, { startX, groundY, size, tilt, physics },
   const minX = 0;
   const maxX = Math.max(0, window.innerWidth - size);
   let x = startX;
-  let y = -size - 20;
+  let y = -size - 100;
   let vx = physics.vx;
   let vy = physics.initialVy;
   let rotation = Number(tilt);
@@ -24,6 +24,7 @@ export function animateBit(bitElement, { startX, groundY, size, tilt, physics },
   let touchedGround = false;
   let settleStartedAt = null;
   let finished = false;
+  let frameCount = 0;
   let previousTimestamp = performance.now();
   const startedAt = previousTimestamp;
 
@@ -40,6 +41,8 @@ export function animateBit(bitElement, { startX, groundY, size, tilt, physics },
     if (finished) {
       return;
     }
+
+    frameCount += 1;
 
     const dt = Math.min(0.033, Math.max(0.008, (timestamp - previousTimestamp) / 1000));
     previousTimestamp = timestamp;
@@ -93,6 +96,10 @@ export function animateBit(bitElement, { startX, groundY, size, tilt, physics },
           return;
         }
       }
+    }
+
+    if (onTrail && !touchedGround && frameCount % 4 === 0) {
+      onTrail(x + size * 0.5, y + size * 0.5, size);
     }
 
     bitElement.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rotation}deg)`;

@@ -1,4 +1,4 @@
-export function bindDebugControls(onSpawn) {
+export function bindDebugControls(onSpawn, onBanner = null, onPresetChange = null) {
   document.querySelectorAll("[data-bits]").forEach((button) => {
     button.addEventListener("click", () => {
       onSpawn(Number(button.dataset.bits));
@@ -10,4 +10,12 @@ export function bindDebugControls(onSpawn) {
     const formData = new FormData(event.currentTarget);
     onSpawn(Number(formData.get("bits")));
   });
+
+  const presetSelect = document.getElementById("physics-preset");
+
+  if (presetSelect && onPresetChange) {
+    presetSelect.addEventListener("change", () => {
+      onPresetChange(presetSelect.value);
+    });
+  }
 }
