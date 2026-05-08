@@ -6,9 +6,7 @@ import { triggerScreenshake } from "./effects.js";
 import { initSounds } from "./sounds.js";
 import { checkMilestone } from "./milestones.js";
 import { bindDebugControls, updateConnectionStatus } from "./debug.js";
-import { bindDebugControls, updateConnectionStatus } from "./debug.js";
 import { installExternalTriggers } from "./triggers.js";
-import { connectStreamerBotSocket } from "./websocket.js";
 import { connectStreamerBotSocket } from "./websocket.js";
 
 const layer = document.getElementById("bits-layer");
@@ -106,8 +104,6 @@ window.__bitsOverlay = {
   decomposeBits,
   spawnBits: (bitAmount, meta) => spawn(bitAmount, meta),
   spawnBitsDirect: (bitAmount) => spawnBits(layer, reducedMotion, bitAmount, preset),
-  queue,
-  socket
   queue,
   socket
 };
