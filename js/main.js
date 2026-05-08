@@ -5,8 +5,9 @@ import { SpawnQueue } from "./queue.js";
 import { triggerScreenshake } from "./effects.js";
 import { initSounds } from "./sounds.js";
 import { checkMilestone } from "./milestones.js";
-import { bindDebugControls } from "./debug.js";
+import { bindDebugControls, updateConnectionStatus } from "./debug.js";
 import { installExternalTriggers } from "./triggers.js";
+import { connectStreamerBotSocket } from "./websocket.js";
 
 const layer = document.getElementById("bits-layer");
 const shell = document.querySelector(".overlay-shell");
@@ -72,6 +73,13 @@ bindDebugControls(
 );
 installExternalTriggers(spawn);
 
+const wsEndpoint = urlParams.get("endpoint")?.trim() || "ws://127.0.0.1:8080/";
+const socket = connectStreamerBotSocket({
+  endpoint: wsEndpoint,
+  onSpawn: (bitAmount, meta) => spawn(bitAmount, meta),
+  onStatusChange: updateConnectionStatus
+});
+
 verifyAssets().then((results) => {
   applyAssetSupport(results);
 });
@@ -82,5 +90,6 @@ window.__bitsOverlay = {
   decomposeBits,
   spawnBits: (bitAmount, meta) => spawn(bitAmount, meta),
   spawnBitsDirect: (bitAmount) => spawnBits(layer, reducedMotion, bitAmount, preset),
-  queue
+  queue,
+  socket
 };

@@ -19,3 +19,32 @@ export function bindDebugControls(onSpawn, onBanner = null, onPresetChange = nul
     });
   }
 }
+
+const WS_STATUS_LABELS = {
+  connecting: "Connecting",
+  connected: "Connected",
+  reconnecting: "Reconnecting",
+  disconnected: "Disconnected",
+  error: "Error"
+};
+
+export function updateConnectionStatus(state, detail = "") {
+  const root = document.getElementById("ws-status");
+
+  if (!root) {
+    return;
+  }
+
+  const stateLabel = root.querySelector("[data-role='state-label']");
+  const detailLabel = root.querySelector("[data-role='state-detail']");
+
+  root.dataset.state = state;
+
+  if (stateLabel) {
+    stateLabel.textContent = WS_STATUS_LABELS[state] ?? state;
+  }
+
+  if (detailLabel) {
+    detailLabel.textContent = detail || "Waiting for events";
+  }
+}

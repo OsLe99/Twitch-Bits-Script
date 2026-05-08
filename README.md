@@ -13,7 +13,7 @@ This project is built with plain HTML, CSS, and JavaScript. There is no build st
 - Screen shake for impactful drops
 - Optional sound support
 - Debug panel for local testing
-- External trigger support through JavaScript and `postMessage`
+- External trigger support through JavaScript, `postMessage`, and WebSocket
 - Static project that can be hosted anywhere
 
 ## Demo Use Case
@@ -94,11 +94,48 @@ window.spawnBitsDrop(24);
 ```
 
 
+## External Triggers
+
 ### JavaScript trigger
 
 ```js
 window.spawnBitsDrop(250);
 ```
+
+### postMessage trigger
+
+```js
+window.postMessage({
+    type: "spawnBits",
+    bits: 250
+}, "*");
+```
+
+### WebSocket trigger (Streamer.bot)
+
+The overlay now opens a WebSocket client by default at:
+
+```text
+ws://127.0.0.1:8080/
+```
+
+You can override the endpoint with a query parameter:
+
+```text
+?endpoint=ws://127.0.0.1:8080/
+```
+
+Supported incoming payload:
+
+```json
+{
+    "request": "ExecuteScript",
+    "name": "SpawnBits",
+    "args": { "amount": 250 }
+}
+```
+
+The debug panel shows socket state (`connecting`, `connected`, `reconnecting`, `error`, `disconnected`) and reconnects automatically with exponential backoff.
 
 ## OBS Setup
 
@@ -153,6 +190,12 @@ Example:
 
 ```text
 ?cap=15
+```
+
+### WebSocket endpoint
+
+```text
+?endpoint=ws://127.0.0.1:8080/
 ```
 
 You can combine parameters:
@@ -211,6 +254,12 @@ This is expected if the optional sound files are missing or the browser blocks a
 ### The debug panel is visible in OBS
 
 Add `?debug=0` to the overlay URL.
+
+### WebSocket does not connect
+
+- Confirm Streamer.bot (or your local socket service) is listening on the endpoint.
+- Check the debug panel status text for reconnect/error details.
+- If your overlay is served over HTTPS, use a `wss://` endpoint to avoid mixed-content blocking.
 
 
 ## Credits

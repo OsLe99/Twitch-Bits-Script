@@ -186,6 +186,73 @@ body {
   background: rgba(255, 255, 255, 0.08);
 }
 
+.ws-status {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ws-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 4px;
+  background: #95a0b8;
+  box-shadow: 0 0 0 0 rgba(149, 160, 184, 0.4);
+}
+
+.ws-status-text {
+  display: grid;
+  gap: 2px;
+}
+
+.ws-status-text strong {
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+
+.ws-status-text span {
+  font-size: 0.8rem;
+  opacity: 0.85;
+  line-height: 1.25;
+}
+
+.ws-status[data-state="connected"] .ws-status-dot {
+  background: #61d48d;
+  box-shadow: 0 0 0 6px rgba(97, 212, 141, 0.14);
+}
+
+.ws-status[data-state="connecting"] .ws-status-dot,
+.ws-status[data-state="reconnecting"] .ws-status-dot {
+  background: #f6c15f;
+  animation: ws-pulse 1.3s ease-in-out infinite;
+}
+
+.ws-status[data-state="error"] .ws-status-dot,
+.ws-status[data-state="disconnected"] .ws-status-dot {
+  background: #f87171;
+  box-shadow: 0 0 0 6px rgba(248, 113, 113, 0.13);
+}
+
+@keyframes ws-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(246, 193, 95, 0.42);
+  }
+
+  70% {
+    box-shadow: 0 0 0 8px rgba(246, 193, 95, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(246, 193, 95, 0);
+  }
+}
+
 @keyframes sparkle-ray {
   0% {
     opacity: 0;
@@ -364,7 +431,4 @@ body {
   background: rgba(255, 255, 255, 0.95);
   color: #10131e;
   cursor: pointer;
-}
-
-  }
 }

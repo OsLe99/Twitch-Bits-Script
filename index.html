@@ -35,6 +35,13 @@
         </select>
       </div>
       <p class="debug-hint">In OBS, append <code>?debug=0</code> to hide this panel.</p>
+      <div id="ws-status" class="ws-status" data-state="connecting" aria-live="polite">
+        <span class="ws-status-dot" aria-hidden="true"></span>
+        <div class="ws-status-text">
+          <strong data-role="state-label">Connecting</strong>
+          <span data-role="state-detail">Connecting to ws://127.0.0.1:8080/</span>
+        </div>
+      </div>
     </section>
   </main>
 
