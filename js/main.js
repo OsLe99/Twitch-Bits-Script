@@ -58,7 +58,12 @@ const queue = new SpawnQueue({
 function spawn(bitAmount, meta = {}) {
   const amount = Math.max(0, Math.floor(Number(bitAmount) || 0));
 
-  if (amount <= 0) return;
+  if (amount <= 0) {
+    console.debug("[BitsOverlay] Ignored spawn request with invalid amount:", bitAmount);
+    return;
+  }
+
+  console.info("[BitsOverlay] Spawning bits:", { bits: amount, meta });
 
   checkMilestone(amount, shell, layer);
 
@@ -86,11 +91,21 @@ const socket = connectStreamerBotSocket({
 });
 
 window.addEventListener('obs-event', (event) => {
+  if (!event?.detail) {
+    return;
+  }
+
+  console.debug("[BitsOverlay][OBS Raw] Event received:", event.detail);
+
   if (event.detail?.eventName === 'spawnBits') {
     const bits = event.detail?.eventData?.bits;
     if (bits) {
+      console.info("[BitsOverlay][OBS Raw] spawnBits request:", { bits });
       spawn(bits);
+      return;
     }
+
+    console.warn("[BitsOverlay][OBS Raw] spawnBits missing valid bits field:", event.detail);
   }
 });
 

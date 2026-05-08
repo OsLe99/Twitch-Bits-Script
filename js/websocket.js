@@ -53,6 +53,7 @@ export function connectStreamerBotSocket({ endpoint = DEFAULT_ENDPOINT, onSpawn,
   const socketUrl = String(endpoint || DEFAULT_ENDPOINT);
 
   if (!/^wss?:\/\//i.test(socketUrl)) {
+    console.error("[BitsOverlay][WebSocket] Invalid endpoint:", socketUrl);
     onStatusChange?.("error", `Invalid WebSocket endpoint: ${socketUrl}`);
     return {
       endpoint: socketUrl,
@@ -93,6 +94,11 @@ export function connectStreamerBotSocket({ endpoint = DEFAULT_ENDPOINT, onSpawn,
       MIN_RETRY_DELAY_MS * (2 ** (retryAttempt - 1))
     );
 
+    console.warn(
+      "[BitsOverlay][WebSocket]",
+      `${reason}. Reconnecting in ${Math.round(delay / 1000)}s (attempt ${retryAttempt})`
+    );
+
     setStatus("reconnecting", `${reason}. Retrying in ${Math.round(delay / 1000)}s`);
 
     reconnectTimer = window.setTimeout(() => {
@@ -107,12 +113,14 @@ export function connectStreamerBotSocket({ endpoint = DEFAULT_ENDPOINT, onSpawn,
     }
 
     clearReconnectTimer();
+    console.info("[BitsOverlay][WebSocket] Connecting:", socketUrl);
     setStatus("connecting", `Connecting to ${socketUrl}`);
 
     try {
       ws = new WebSocket(socketUrl);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to create WebSocket";
+      console.error("[BitsOverlay][WebSocket] Setup failed:", message);
       setStatus("error", message);
       scheduleReconnect("WebSocket setup failed");
       return;
@@ -120,6 +128,7 @@ export function connectStreamerBotSocket({ endpoint = DEFAULT_ENDPOINT, onSpawn,
 
     ws.addEventListener("open", () => {
       retryAttempt = 0;
+      console.info("[BitsOverlay][WebSocket] Connected:", socketUrl);
       setStatus("connected", `Connected to ${socketUrl}`);
     });
 
@@ -127,13 +136,20 @@ export function connectStreamerBotSocket({ endpoint = DEFAULT_ENDPOINT, onSpawn,
       const parsed = parseSpawnPayload(event.data);
 
       if (!parsed) {
+        console.debug("[BitsOverlay][WebSocket] Ignored payload:", event.data);
         return;
       }
+
+      console.info("[BitsOverlay][WebSocket] Spawn request received:", {
+        bits: parsed.amount,
+        meta: parsed.meta
+      });
 
       onSpawn?.(parsed.amount, parsed.meta);
     });
 
     ws.addEventListener("error", () => {
+      console.error("[BitsOverlay][WebSocket] Connection error");
       setStatus("error", "Connection error");
     });
 
@@ -141,6 +157,7 @@ export function connectStreamerBotSocket({ endpoint = DEFAULT_ENDPOINT, onSpawn,
       ws = null;
 
       if (isStopped) {
+        console.info("[BitsOverlay][WebSocket] Disconnected: socket stopped");
         setStatus("disconnected", "Socket stopped");
         return;
       }
@@ -149,6 +166,8 @@ export function connectStreamerBotSocket({ endpoint = DEFAULT_ENDPOINT, onSpawn,
         ? "Socket closed"
         : `Socket closed (${event.code})`;
 
+      console.warn("[BitsOverlay][WebSocket]", reason);
+
       scheduleReconnect(reason);
     });
   };
@@ -156,6 +175,8 @@ export function connectStreamerBotSocket({ endpoint = DEFAULT_ENDPOINT, onSpawn,
   const disconnect = () => {
     isStopped = true;
     clearReconnectTimer();
+
+    console.info("[BitsOverlay][WebSocket] Disconnect requested");
 
     if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
       ws.close(1000, "Overlay stopped");
@@ -168,6 +189,7 @@ export function connectStreamerBotSocket({ endpoint = DEFAULT_ENDPOINT, onSpawn,
   const reconnect = () => {
     isStopped = false;
     retryAttempt = 0;
+    console.info("[BitsOverlay][WebSocket] Reconnect requested");
     connect();
   };
 
