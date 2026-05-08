@@ -103,6 +103,4 @@ window.__bitsOverlay = {
   spawnBitsDirect: (bitAmount) => spawnBits(layer, reducedMotion, bitAmount, preset),
   queue,
   socket
-  queue,
-  socket
 };
