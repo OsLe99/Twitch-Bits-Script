@@ -57,12 +57,13 @@ body {
 
 .bit {
   position: absolute;
-  top: -80px;
+  top: 0;
   left: 0;
   width: var(--bit-size, 42px);
   height: var(--bit-size, 42px);
   transform: translate3d(var(--start-x, 0px), 0, 0) rotate(0deg);
   will-change: transform, opacity;
+  z-index: 1;
 }
 
 .bit::before {
@@ -73,7 +74,6 @@ body {
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
-  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.24));
 }
 
 .bit::after {
@@ -84,9 +84,6 @@ body {
   background: var(--bit-fallback);
   clip-path: polygon(50% 0%, 100% 30%, 84% 100%, 16% 100%, 0% 30%);
   opacity: var(--fallback-opacity, 0);
-  box-shadow:
-    inset 0 0 0 3px rgba(255, 255, 255, 0.18),
-    0 10px 18px rgba(0, 0, 0, 0.18);
 }
 
 .bit.is-sparkling::before,
@@ -150,7 +147,7 @@ body {
 }
 
 .debug-actions {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   margin-bottom: 12px;
 }
 
@@ -222,5 +219,152 @@ body {
 
   .custom-trigger {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Screenshake ─────────────────────────────────────────── */
+
+.overlay-shell.is-shaking {
+  animation: screen-shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes screen-shake {
+  10%, 90% { transform: translateX(calc(-6px * var(--shake-scale, 1))); }
+  20%, 80% { transform: translateX(calc(9px  * var(--shake-scale, 1))); }
+  30%, 50%, 70% { transform: translateX(calc(-9px * var(--shake-scale, 1))); }
+  40%, 60% { transform: translateX(calc(8px  * var(--shake-scale, 1))); }
+}
+
+/* ─── Glow ring ───────────────────────────────────────────── */
+
+.glow-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(139, 92, 246, 0.85);
+  box-shadow:
+    0 0 14px rgba(139, 92, 246, 0.6),
+    0 0 4px  rgba(255, 245, 194, 0.5);
+  pointer-events: none;
+  animation: glow-ring-expand 420ms ease-out forwards;
+}
+
+@keyframes glow-ring-expand {
+  from { opacity: 0.9; transform: scale(0.15); }
+  to   { opacity: 0;   transform: scale(2.2);  }
+}
+
+/* ─── Bit trail ───────────────────────────────────────────── */
+
+.bit-trail {
+  position: absolute;
+  z-index: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 245, 194, 0.85) 0%,
+    rgba(139, 92, 246, 0.35) 55%,
+    transparent 100%
+  );
+  pointer-events: none;
+  animation: trail-fade 280ms ease-out forwards;
+}
+
+@keyframes trail-fade {
+  from { opacity: 0.65; transform: scale(1);    }
+  to   { opacity: 0;    transform: scale(0.18); }
+}
+
+/* ─── Bit piles ───────────────────────────────────────────── */
+
+.bit.is-piled {
+  animation: pile-fade 3.8s ease-out forwards;
+}
+
+@keyframes pile-fade {
+  0%, 28% { opacity: 1;   }
+  100%    { opacity: 0;   }
+}
+
+/* ─── Bit counter HUD ─────────────────────────────────────── */
+
+.bit-counter {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  padding: 6px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  background: var(--panel-bg);
+  backdrop-filter: blur(12px);
+  color: var(--panel-text);
+  font-size: 0.88rem;
+  font-weight: 600;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ─── Milestone burst ─────────────────────────────────────── */
+
+.milestone-burst {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  animation: milestone-flash 1.4s ease forwards;
+}
+
+.milestone-burst::before {
+  content: var(--milestone-label, "");
+  font-size: clamp(3rem, 9vw, 7rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-shadow:
+    0 0 40px rgba(139, 92, 246, 0.95),
+    0 0 90px rgba(139, 92, 246, 0.5),
+    0 4px 16px rgba(0, 0, 0, 0.4);
+  animation: milestone-text 1.4s ease forwards;
+}
+
+@keyframes milestone-flash {
+  0%   { background: rgba(139, 92, 246, 0);    }
+  12%  { background: rgba(139, 92, 246, 0.32); }
+  35%  { background: rgba(139, 92, 246, 0.14); }
+  100% { background: rgba(139, 92, 246, 0);    }
+}
+
+@keyframes milestone-text {
+  0%   { opacity: 0; transform: scale(0.35); }
+  18%  { opacity: 1; transform: scale(1.08); }
+  30%  { transform: scale(0.96);             }
+  45%  { opacity: 1; transform: scale(1);    }
+  78%  { opacity: 1;                         }
+  100% { opacity: 0; transform: scale(1.18); }
+}
+
+/* ─── Debug: physics preset selector ─────────────────────── */
+
+.preset-control {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.preset-control label {
+  font-size: 0.92rem;
+}
+
+.preset-control select {
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  background: rgba(255, 255, 255, 0.95);
+  color: #10131e;
+  cursor: pointer;
+}
+
   }
 }
