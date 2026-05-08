@@ -80,6 +80,15 @@ const socket = connectStreamerBotSocket({
   onStatusChange: updateConnectionStatus
 });
 
+window.addEventListener('obs-event', (event) => {
+  if (event.detail?.eventName === 'spawnBits') {
+    const bits = event.detail?.eventData?.bits;
+    if (bits) {
+      spawn(bits);
+    }
+  }
+});
+
 verifyAssets().then((results) => {
   applyAssetSupport(results);
 });
