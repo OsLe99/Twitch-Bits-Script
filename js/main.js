@@ -6,9 +6,7 @@ import { triggerScreenshake } from "./effects.js";
 import { initSounds } from "./sounds.js";
 import { checkMilestone } from "./milestones.js";
 import { bindDebugControls, updateConnectionStatus } from "./debug.js";
-import { bindDebugControls, updateConnectionStatus } from "./debug.js";
 import { installExternalTriggers } from "./triggers.js";
-import { connectStreamerBotSocket } from "./websocket.js";
 import { connectStreamerBotSocket } from "./websocket.js";
 
 const layer = document.getElementById("bits-layer");
@@ -25,6 +23,11 @@ if (isDebugHidden) {
 
   if (hudCounter) {
     hudCounter.hidden = true;
+  }
+
+  const wsStatus = document.getElementById("ws-status");
+  if (wsStatus) {
+    wsStatus.hidden = true;
   }
 }
 
