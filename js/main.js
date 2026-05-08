@@ -26,6 +26,11 @@ if (isDebugHidden) {
   if (hudCounter) {
     hudCounter.hidden = true;
   }
+
+  const wsStatus = document.getElementById("ws-status");
+  if (wsStatus) {
+    wsStatus.hidden = true;
+  }
 }
 
 const presetName = urlParams.get("physics") ?? "default";
