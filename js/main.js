@@ -90,12 +90,12 @@ const socket = connectStreamerBotSocket({
   onStatusChange: updateConnectionStatus
 });
 
-window.addEventListener('obs-event', (event) => {
+const handleObsVendorEvent = (eventName, event) => {
   if (!event?.detail) {
     return;
   }
 
-  console.debug("[BitsOverlay][OBS Raw] Event received:", event.detail);
+  console.debug(`[BitsOverlay][OBS Raw] ${eventName} received:`, event.detail);
 
   if (event.detail?.eventName === 'spawnBits') {
     const bits = event.detail?.eventData?.bits;
@@ -107,7 +107,10 @@ window.addEventListener('obs-event', (event) => {
 
     console.warn("[BitsOverlay][OBS Raw] spawnBits missing valid bits field:", event.detail);
   }
-});
+};
+
+window.addEventListener("obs-event", (event) => handleObsVendorEvent("obs-event", event));
+window.addEventListener("obsCustomMessage", (event) => handleObsVendorEvent("obsCustomMessage", event));
 
 verifyAssets().then((results) => {
   applyAssetSupport(results);
