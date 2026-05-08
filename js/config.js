@@ -1,10 +1,10 @@
 export const BIT_FILES = [
-  "Bits/1.gif",
-  "Bits/10.gif",
-  "Bits/1k.gif",
-  "Bits/5k.gif",
-  "Bits/10000.gif",
-  "Bits/100000.gif"
+  "assets/Bits/1.gif",
+  "assets/Bits/10.gif",
+  "assets/Bits/1k.gif",
+  "assets/Bits/5k.gif",
+  "assets/Bits/10000.gif",
+  "assets/Bits/100000.gif"
 ];
 
 export function parseBitValueFromFilename(filePath) {
