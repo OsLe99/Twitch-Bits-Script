@@ -15,6 +15,7 @@ const debugPanel = document.querySelector(".debug-panel");
 const hudCounter = document.getElementById("bit-counter");
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const urlParams = new URLSearchParams(window.location.search);
+const defaultWsEndpoint = "ws://127.0.0.1:8080/";
 
 const isDebugHidden = urlParams.get("debug") === "0";
 
@@ -83,7 +84,36 @@ bindDebugControls(
 );
 installExternalTriggers(spawn);
 
-const wsEndpoint = urlParams.get("endpoint")?.trim() || "ws://127.0.0.1:8080/";
+function normalizeWsEndpoint(candidate) {
+  const trimmed = String(candidate ?? "").trim();
+
+  if (!trimmed) {
+    return "";
+  }
+
+  if (/^wss?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  return `ws://${trimmed}`;
+}
+
+function buildWsEndpointFromUrl(params) {
+  const endpointCandidate =
+    params.get("endpoint")
+    ?? params.get("ws")
+    ?? params.get("wsEndpoint");
+
+  const normalizedEndpoint = normalizeWsEndpoint(endpointCandidate);
+
+  if (normalizedEndpoint) {
+    return normalizedEndpoint;
+  }
+  return defaultWsEndpoint;
+}
+
+const wsEndpoint = buildWsEndpointFromUrl(urlParams);
+console.info("[BitsOverlay] Resolved WebSocket endpoint:", wsEndpoint);
 const socket = connectStreamerBotSocket({
   endpoint: wsEndpoint,
   onSpawn: (bitAmount, meta) => spawn(bitAmount, meta),

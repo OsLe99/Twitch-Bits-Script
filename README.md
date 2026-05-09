@@ -198,6 +198,18 @@ Example:
 ?endpoint=ws://127.0.0.1:8080/
 ```
 
+For OBS/browser URLs, URL-encoding is recommended:
+
+```text
+?endpoint=ws%3A%2F%2F127.0.0.1%3A8080%2F
+```
+
+Optional parameters:
+
+- `wsPort` (default `8080`)
+- `wsProtocol` (`ws` or `wss`, default `ws`)
+- `wsPath` (default `/`)
+
 You can combine parameters:
 
 ```text
