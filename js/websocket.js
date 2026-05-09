@@ -8,10 +8,41 @@ function toPositiveInt(value) {
 }
 
 export function parseSpawnPayload(rawPayload) {
-  const payload = typeof rawPayload === "string"
-    ? safeParseJson(rawPayload)
-    : rawPayload;
+  const payload = toObject(rawPayload);
 
+  if (!payload) {
+    return null;
+  }
+
+  const visited = new Set();
+  const queue = [payload];
+
+  while (queue.length > 0) {
+    const candidate = queue.shift();
+
+    if (!candidate || visited.has(candidate)) {
+      continue;
+    }
+
+    visited.add(candidate);
+
+    const extracted = extractSpawnPayload(candidate);
+    if (extracted) {
+      return extracted;
+    }
+
+    for (const key of ["data", "payload", "body", "args", "eventData", "message"]) {
+      const nested = toObject(candidate[key]);
+      if (nested && !visited.has(nested)) {
+        queue.push(nested);
+      }
+    }
+  }
+
+  return null;
+}
+
+function extractSpawnPayload(payload) {
   if (!payload || typeof payload !== "object") {
     return null;
   }
@@ -36,6 +67,34 @@ export function parseSpawnPayload(rawPayload) {
 
     const { username = "", message = "" } = payload;
     return { amount, meta: { username, message } };
+  }
+
+  if (payload.action === "spawnBits") {
+    const amount = toPositiveInt(payload.amount);
+
+    if (!amount) {
+      return null;
+    }
+
+    const { username = "", message = "" } = payload;
+    return { amount, meta: { username, message } };
+  }
+
+  return null;
+}
+
+function toObject(value) {
+  if (!value) {
+    return null;
+  }
+
+  if (typeof value === "object") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = safeParseJson(value);
+    return parsed && typeof parsed === "object" ? parsed : null;
   }
 
   return null;
